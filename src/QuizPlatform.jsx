@@ -1351,6 +1351,7 @@ const QuizScreen = ({ user, subjectId, onFinish, onBack }) => {
   const [answered, setAnswered] = useState(false);
   const [score, setScore] = useState(0);
   const [key, setKey] = useState(0);
+  const [userAnswers, setUserAnswers] = useState([]);
 
   useEffect(() => {
     (async () => { setQuestions(await loadQuestions(subjectId)); })();
@@ -1389,11 +1390,23 @@ const QuizScreen = ({ user, subjectId, onFinish, onBack }) => {
   const handleSelect = (idx) => {
     if (answered) return;
     setSelected(idx); setAnswered(true);
+    setUserAnswers((prev) => {
+      const updated = [...prev];
+      updated[current] = idx;
+      return updated;
+    });
     if (idx === q.correct) setScore((s) => s + 1);
   };
   const handleNext = () => {
-    if (current + 1 >= total) onFinish(score, total);
-    else { setCurrent((c) => c + 1); setSelected(null); setAnswered(false); setKey((k) => k + 1); }
+    if (current + 1 >= total) {
+      const reviewData = questions.map((item, index) => ({
+        ...item,
+        userAnswer: index === current ? selected : userAnswers[index],
+      }));
+      onFinish(score, total, reviewData);
+    } else {
+      setCurrent((c) => c + 1); setSelected(null); setAnswered(false); setKey((k) => k + 1);
+    }
   };
   const Icon = subject.icon;
 
@@ -1552,9 +1565,161 @@ const LeaderboardRow = ({ player, rank }) => {
       </div>
     </div>
   );
+// ================================================================
+//  📝 Quiz Review Component
+// ================================================================
+const QuizReview = ({ review }) => {
+  const [filter, setFilter] = useState('all'); // 'all', 'correct', 'incorrect'
+
+  if (!review || review.length === 0) return null;
+
+  const correctCount = review.filter(q => q.userAnswer === q.correct).length;
+  const incorrectCount = review.length - correctCount;
+
+  const filteredQuestions = review.filter(q => {
+    if (filter === 'correct') return q.userAnswer === q.correct;
+    if (filter === 'incorrect') return q.userAnswer !== q.correct;
+    return true;
+  });
+
+  return (
+    <div className="glass rounded-3xl p-6 md:p-8 mb-10 text-right animate-slide-up" style={{ animationDelay: '2.1s', opacity: 0 }}>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 pb-4 border-b border-white/5">
+        <div>
+          <h3 className="text-xl font-bold text-white font-display mb-1 font-sans">مراجعة الأسئلة</h3>
+          <p className="text-xs text-white/40">اضغط على التبويبات لتصفية الأسئلة</p>
+        </div>
+        <div className="flex items-center gap-2 self-start md:self-auto overflow-x-auto max-w-full pb-1">
+          <button
+            onClick={() => setFilter('all')}
+            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all shrink-0 ${
+              filter === 'all'
+                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white border border-transparent'
+            }`}
+          >
+            الكل ({review.length})
+          </button>
+          <button
+            onClick={() => setFilter('incorrect')}
+            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all shrink-0 flex items-center gap-2 ${
+              filter === 'incorrect'
+                ? 'bg-red-500/20 text-red-300 border border-red-500/40'
+                : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white border border-transparent'
+            }`}
+          >
+            <span className="w-2 h-2 rounded-full bg-red-400" />
+            الأخطاء ({incorrectCount})
+          </button>
+          <button
+            onClick={() => setFilter('correct')}
+            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all shrink-0 flex items-center gap-2 ${
+              filter === 'correct'
+                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white border border-transparent'
+            }`}
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+            الإجابات الصحيحة ({correctCount})
+          </button>
+        </div>
+      </div>
+
+      {filteredQuestions.length === 0 ? (
+        <div className="text-center py-10 text-white/30 text-sm">
+          لا توجد أسئلة في هذا القسم
+        </div>
+      ) : (
+        <div className="space-y-6 max-h-[550px] overflow-y-auto pl-2 pr-1 custom-scrollbar scroll-smooth">
+          {filteredQuestions.map((q, idx) => {
+            const isUserCorrect = q.userAnswer === q.correct;
+            return (
+              <div
+                key={idx}
+                className="relative rounded-2xl p-5 transition-all duration-300 hover:bg-white/[0.02]"
+                style={{
+                  background: 'rgba(255,255,255,0.01)',
+                  border: '1px solid rgba(255,255,255,0.04)',
+                  borderRight: `4px solid ${isUserCorrect ? '#10b981' : '#ef4444'}`
+                }}
+              >
+                <div className="flex items-start justify-between gap-4 mb-4">
+                  <div className="flex-1">
+                    <span className="text-xs text-white/30 block mb-1">سؤال {idx + 1}</span>
+                    <h4 className="text-base md:text-lg font-bold text-white leading-relaxed font-display">{q.q}</h4>
+                  </div>
+                  <span
+                    className={`shrink-0 text-xs px-3 py-1 rounded-full font-bold ${
+                      isUserCorrect
+                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                        : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                    }`}
+                  >
+                    {isUserCorrect ? 'إجابة صحيحة' : 'إجابة خاطئة'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {q.options.map((opt, optIdx) => {
+                    const isSelected = q.userAnswer === optIdx;
+                    const isCorrect = optIdx === q.correct;
+                    const showCorrect = isCorrect;
+                    const showWrong = isSelected && !isCorrect;
+
+                    let bg = 'rgba(255,255,255,0.02)';
+                    let border = 'rgba(255,255,255,0.05)';
+                    let textColor = 'text-white/70';
+
+                    if (showCorrect) {
+                      bg = 'linear-gradient(135deg, rgba(52,211,153,0.1), rgba(52,211,153,0.02))';
+                      border = 'rgba(52,211,153,0.3)';
+                      textColor = 'text-emerald-300 font-medium';
+                    } else if (showWrong) {
+                      bg = 'linear-gradient(135deg, rgba(248,113,113,0.1), rgba(248,113,113,0.02))';
+                      border = 'rgba(248,113,113,0.3)';
+                      textColor = 'text-red-300 font-medium';
+                    }
+
+                    return (
+                      <div
+                        key={optIdx}
+                        className="p-3.5 rounded-xl flex items-center gap-3 text-sm transition-all"
+                        style={{ background: bg, border: `1px solid ${border}` }}
+                      >
+                        <div
+                          className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs"
+                          style={{
+                            background: showCorrect
+                              ? 'rgba(52,211,153,0.15)'
+                              : showWrong
+                              ? 'rgba(248,113,113,0.15)'
+                              : 'rgba(255,255,255,0.04)',
+                            color: showCorrect ? '#34d399' : showWrong ? '#f87171' : 'rgba(255,255,255,0.4)',
+                          }}
+                        >
+                          {showCorrect ? <Check className="w-3.5 h-3.5" /> : showWrong ? '✕' : ['أ', 'ب', 'ج', 'د'][optIdx]}
+                        </div>
+                        <span className={`flex-1 ${textColor}`}>{opt}</span>
+                        {isSelected && !isUserCorrect && (
+                          <span className="text-[10px] text-red-400 font-bold px-2 py-0.5 rounded bg-red-400/10">إجابتك</span>
+                        )}
+                        {isSelected && isUserCorrect && (
+                          <span className="text-[10px] text-emerald-400 font-bold px-2 py-0.5 rounded bg-emerald-400/10">إجابتك</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 };
 
-const ResultsScreen = ({ user, subjectId, score, total, onRestart }) => {
+const ResultsScreen = ({ user, subjectId, score, total, review = [], onRestart }) => {
   const [displayScore, setDisplayScore] = useState(0);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [board, setBoard] = useState([]);
@@ -1647,6 +1812,8 @@ const ResultsScreen = ({ user, subjectId, score, total, onRestart }) => {
 
         {showLeaderboard && (
           <div className="animate-slide-up">
+            <QuizReview review={review} />
+
             <div className="text-center mb-8">
               <div className="inline-flex items-center gap-2 glass-gold rounded-full px-5 py-2 mb-4">
                 <Trophy className="w-4 h-4 text-amber-300" />
@@ -2600,6 +2767,7 @@ export default function App() {
   const [authReady, setAuthReady] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [finalScore, setFinalScore] = useState({ score: 0, total: 0 });
+  const [quizReview, setQuizReview] = useState([]);
   const [toast, setToast] = useState(null);
 
   const showToast = (msg, type = 'success') => setToast({ msg, type });
@@ -2630,8 +2798,8 @@ export default function App() {
 
   const handleStageSelect = () => setScreen('subject');
   const handleSubjectSelect = (subjectId) => { setSelectedSubject(subjectId); setScreen('quiz'); };
-  const handleQuizFinish = (score, total) => { setFinalScore({ score, total }); setScreen('results'); };
-  const handleRestart = () => { setSelectedSubject(null); setFinalScore({ score: 0, total: 0 }); setScreen('subject'); };
+  const handleQuizFinish = (score, total, reviewData) => { setFinalScore({ score, total }); setQuizReview(reviewData || []); setScreen('results'); };
+  const handleRestart = () => { setSelectedSubject(null); setFinalScore({ score: 0, total: 0 }); setQuizReview([]); setScreen('subject'); };
 
   return (
     <div className="min-h-screen text-white" style={{ background: '#0a0a14' }}>
@@ -2652,7 +2820,7 @@ export default function App() {
       )}
       {screen === 'results' && user && (
         <ResultsScreen user={user} subjectId={selectedSubject}
-          score={finalScore.score} total={finalScore.total} onRestart={handleRestart} />
+          score={finalScore.score} total={finalScore.total} review={quizReview} onRestart={handleRestart} />
       )}
       {screen === 'admin-login' && (
         <AdminLogin onSuccess={() => setScreen('admin-panel')}
