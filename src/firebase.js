@@ -265,62 +265,82 @@ const triggerAuthStateChange = (user) => {
 };
 
 export async function signInWithGoogle() {
-  const mockUser = {
-    uid: 'google_' + Math.random().toString(36).substr(2, 9),
-    displayName: 'طالب Google تجريبي',
-    email: 'student.google@example.com',
-    photoURL: null,
-    providerData: [{ providerId: 'google.com' }]
-  };
-  
+  const email = prompt("الرجاء إدخال البريد الإلكتروني لحساب Google الخاص بك لتسجيل الدخول الحقيقي وحفظ درجاتك:");
+  if (!email || !email.trim()) {
+    throw { code: 'auth/popup-closed-by-user', message: 'تم إغلاق نافذة التسجيل' };
+  }
+  const cleanEmail = email.trim().toLowerCase();
   const data = getMockData();
-  const exists = data.users.find(u => u.email === mockUser.email);
+  let exists = data.users.find(u => u.email === cleanEmail);
+  
+  let fullName = "";
   if (!exists) {
-    data.users.push({
-      uid: mockUser.uid,
-      fullName: mockUser.displayName,
-      email: mockUser.email,
-      photoURL: mockUser.photoURL,
+    fullName = prompt("هذا الحساب يدخل للمرة الأولى، الرجاء إدخال اسمك الثلاثي للتسجيل وحفظ درجاتك:");
+    if (!fullName || !fullName.trim()) {
+      fullName = cleanEmail.split('@')[0];
+    }
+    const newUser = {
+      uid: 'google_' + Math.random().toString(36).substr(2, 9),
+      fullName: fullName.trim(),
+      email: cleanEmail,
+      photoURL: null,
       joinedAt: createTimestamp(),
       totalAttempts: 0
-    });
+    };
+    data.users.push(newUser);
     saveMockUsers(data.users);
     notify('users');
-  } else {
-    mockUser.uid = exists.uid;
-    mockUser.displayName = exists.fullName;
+    exists = newUser;
   }
+  
+  const mockUser = {
+    uid: exists.uid,
+    displayName: exists.fullName,
+    email: exists.email,
+    photoURL: exists.photoURL || null,
+    providerData: [{ providerId: 'google.com' }]
+  };
   
   triggerAuthStateChange(mockUser);
   return mockUser;
 }
 
 export async function signInWithGithub() {
-  const mockUser = {
-    uid: 'github_' + Math.random().toString(36).substr(2, 9),
-    displayName: 'طالب GitHub تجريبي',
-    email: 'student.github@example.com',
-    photoURL: null,
-    providerData: [{ providerId: 'github.com' }]
-  };
-  
+  const email = prompt("الرجاء إدخال البريد الإلكتروني لحساب GitHub الخاص بك لتسجيل الدخول وحفظ درجاتك:");
+  if (!email || !email.trim()) {
+    throw { code: 'auth/popup-closed-by-user', message: 'تم إغلاق نافذة التسجيل' };
+  }
+  const cleanEmail = email.trim().toLowerCase();
   const data = getMockData();
-  const exists = data.users.find(u => u.email === mockUser.email);
+  let exists = data.users.find(u => u.email === cleanEmail);
+  
+  let fullName = "";
   if (!exists) {
-    data.users.push({
-      uid: mockUser.uid,
-      fullName: mockUser.displayName,
-      email: mockUser.email,
-      photoURL: mockUser.photoURL,
+    fullName = prompt("هذا الحساب يدخل للمرة الأولى، الرجاء إدخال اسمك الثلاثي للتسجيل وحفظ درجاتك:");
+    if (!fullName || !fullName.trim()) {
+      fullName = cleanEmail.split('@')[0];
+    }
+    const newUser = {
+      uid: 'github_' + Math.random().toString(36).substr(2, 9),
+      fullName: fullName.trim(),
+      email: cleanEmail,
+      photoURL: null,
       joinedAt: createTimestamp(),
       totalAttempts: 0
-    });
+    };
+    data.users.push(newUser);
     saveMockUsers(data.users);
     notify('users');
-  } else {
-    mockUser.uid = exists.uid;
-    mockUser.displayName = exists.fullName;
+    exists = newUser;
   }
+  
+  const mockUser = {
+    uid: exists.uid,
+    displayName: exists.fullName,
+    email: exists.email,
+    photoURL: exists.photoURL || null,
+    providerData: [{ providerId: 'github.com' }]
+  };
   
   triggerAuthStateChange(mockUser);
   return mockUser;
@@ -328,23 +348,24 @@ export async function signInWithGithub() {
 
 export async function signUpWithEmail(email, password, fullName) {
   const data = getMockData();
-  const exists = data.users.find(u => u.email === email);
+  const cleanEmail = email.trim().toLowerCase();
+  const exists = data.users.find(u => u.email === cleanEmail);
   if (exists) {
     throw { code: 'auth/email-already-in-use', message: 'Email already exists.' };
   }
   
   const mockUser = {
     uid: 'email_' + Math.random().toString(36).substr(2, 9),
-    displayName: fullName,
-    email: email,
+    displayName: fullName.trim(),
+    email: cleanEmail,
     photoURL: null,
     providerData: [{ providerId: 'password' }]
   };
   
   data.users.push({
     uid: mockUser.uid,
-    fullName: fullName,
-    email: email,
+    fullName: fullName.trim(),
+    email: cleanEmail,
     password: password,
     photoURL: null,
     joinedAt: createTimestamp(),
@@ -359,40 +380,22 @@ export async function signUpWithEmail(email, password, fullName) {
 
 export async function signInWithEmail(email, password) {
   const data = getMockData();
-  const exists = data.users.find(u => u.email === email);
+  const cleanEmail = email.trim().toLowerCase();
+  const exists = data.users.find(u => u.email === cleanEmail);
   
-  // Auto-register if student enters a new email to keep experience frictionless!
   if (!exists) {
-    const fullName = email.split('@')[0];
-    const mockUser = {
-      uid: 'email_' + Math.random().toString(36).substr(2, 9),
-      displayName: fullName,
-      email: email,
-      photoURL: null,
-      providerData: [{ providerId: 'password' }]
-    };
-    
-    data.users.push({
-      uid: mockUser.uid,
-      fullName: fullName,
-      email: email,
-      password: password,
-      photoURL: null,
-      joinedAt: createTimestamp(),
-      totalAttempts: 0
-    });
-    saveMockUsers(data.users);
-    notify('users');
-    
-    triggerAuthStateChange(mockUser);
-    return mockUser;
+    throw { code: 'auth/user-not-found', message: 'لا يوجد حساب بهذا البريد' };
+  }
+  
+  if (exists.password && exists.password !== password) {
+    throw { code: 'auth/wrong-password', message: 'كلمة المرور غير صحيحة' };
   }
   
   const mockUser = {
     uid: exists.uid,
     displayName: exists.fullName,
     email: exists.email,
-    photoURL: exists.photoURL,
+    photoURL: exists.photoURL || null,
     providerData: [{ providerId: 'password' }]
   };
   
