@@ -26,104 +26,10 @@ const createTimestamp = (date = new Date()) => {
 export const serverTimestamp = () => createTimestamp();
 
 // ================================================================
-// 📚 REALISTIC SEED DATA (بيانات تجريبية واقعية)
+// 📚 REALISTIC SEED DATA (تم إفراغها بناءً على طلبك لبدء منصة نظيفة)
 // ================================================================
-const SEED_USERS = [
-  { uid: 'student_1', fullName: 'أحمد محمود العلي', email: 'ahmed.ali@student.com', joinedAtMs: Date.now() - 3600000 * 24 * 5, totalAttempts: 4 },
-  { uid: 'student_2', fullName: 'فاطمة الزهراء حسن', email: 'fatima.h@student.com', joinedAtMs: Date.now() - 3600000 * 24 * 4, totalAttempts: 5 },
-  { uid: 'student_3', fullName: 'مصطفى حسين الخفاجي', email: 'mustafa.k@student.com', joinedAtMs: Date.now() - 3600000 * 24 * 3, totalAttempts: 3 },
-  { uid: 'student_4', fullName: 'زينب جعفر السعدي', email: 'zeinab.s@student.com', joinedAtMs: Date.now() - 3600000 * 24 * 2, totalAttempts: 2 },
-  { uid: 'student_5', fullName: 'علي جاسم معاريج', email: 'ali.j@student.com', joinedAtMs: Date.now() - 3600000 * 12, totalAttempts: 6 },
-  { uid: 'student_6', fullName: 'مريم عبد الرحمن', email: 'maryam.a@student.com', joinedAtMs: Date.now() - 3600000 * 6, totalAttempts: 2 },
-  { uid: 'student_7', fullName: 'حسن ناصر الوائلي', email: 'hassan.w@student.com', joinedAtMs: Date.now() - 3600000 * 2, totalAttempts: 1 }
-];
-
-const SEED_ATTEMPTS = [
-  {
-    id: 'attempt_1',
-    uid: 'student_2',
-    displayName: 'فاطمة الزهراء حسن',
-    photoURL: null,
-    subjectId: 'novel',
-    subjectName: 'الرواية',
-    score: 148,
-    total: 150,
-    percentage: (148 / 150) * 100,
-    completedAtMs: Date.now() - 3600000 * 24 * 3
-  },
-  {
-    id: 'attempt_2',
-    uid: 'student_5',
-    displayName: 'علي جاسم معاريج',
-    photoURL: null,
-    subjectId: 'methods',
-    subjectName: 'طرائق التدريس',
-    score: 28,
-    total: 30,
-    percentage: (28 / 30) * 100,
-    completedAtMs: Date.now() - 3600000 * 18
-  },
-  {
-    id: 'attempt_3',
-    uid: 'student_1',
-    displayName: 'أحمد محمود العلي',
-    photoURL: null,
-    subjectId: 'novel',
-    subjectName: 'الرواية',
-    score: 142,
-    total: 150,
-    percentage: (142 / 150) * 100,
-    completedAtMs: Date.now() - 3600000 * 14
-  },
-  {
-    id: 'attempt_4',
-    uid: 'student_3',
-    displayName: 'مصطفى حسين الخفاجي',
-    photoURL: null,
-    subjectId: 'grammar',
-    subjectName: 'النحو',
-    score: 18,
-    total: 20,
-    percentage: 90,
-    completedAtMs: Date.now() - 3600000 * 8
-  },
-  {
-    id: 'attempt_5',
-    uid: 'student_4',
-    displayName: 'زينب جعفر السعدي',
-    photoURL: null,
-    subjectId: 'poetry',
-    subjectName: 'الشعر',
-    score: 22,
-    total: 25,
-    percentage: 88,
-    completedAtMs: Date.now() - 3600000 * 4
-  },
-  {
-    id: 'attempt_6',
-    uid: 'student_6',
-    displayName: 'مريم عبد الرحمن',
-    photoURL: null,
-    subjectId: 'novel',
-    subjectName: 'الرواية',
-    score: 135,
-    total: 150,
-    percentage: (135 / 150) * 100,
-    completedAtMs: Date.now() - 3600000 * 2
-  },
-  {
-    id: 'attempt_7',
-    uid: 'student_7',
-    displayName: 'حسن ناصر الوائلي',
-    photoURL: null,
-    subjectId: 'guidance',
-    subjectName: 'الإرشاد التربوي',
-    score: 27,
-    total: 30,
-    percentage: 90,
-    completedAtMs: Date.now() - 3600000 * 0.5
-  }
-];
+const SEED_USERS = [];
+const SEED_ATTEMPTS = [];
 
 // ================================================================
 // 💾 LOCAL STORAGE DATABASE ADAPTER
@@ -139,18 +45,17 @@ const getMockData = () => {
         ...u,
         joinedAt: createTimestamp(new Date(u.joinedAtMs))
       }));
+      // تنظيف تلقائي للمتصفح من الأسماء التجريبية القديمة إن وجدت
+      if (users.some(u => u.uid && u.uid.startsWith('student_'))) {
+        users = [];
+        saveMockUsers(users);
+      }
     } else {
-      users = SEED_USERS.map(u => ({
-        ...u,
-        joinedAt: createTimestamp(new Date(u.joinedAtMs))
-      }));
+      users = [];
       saveMockUsers(users);
     }
   } catch (e) {
-    users = SEED_USERS.map(u => ({
-      ...u,
-      joinedAt: createTimestamp(new Date(u.joinedAtMs))
-    }));
+    users = [];
   }
 
   try {
@@ -160,18 +65,17 @@ const getMockData = () => {
         ...a,
         completedAt: createTimestamp(new Date(a.completedAtMs))
       }));
+      // تنظيف تلقائي للمتصفح من المحاولات التجريبية القديمة
+      if (attempts.some(a => a.uid && a.uid.startsWith('student_'))) {
+        attempts = [];
+        saveMockAttempts(attempts);
+      }
     } else {
-      attempts = SEED_ATTEMPTS.map(a => ({
-        ...a,
-        completedAt: createTimestamp(new Date(a.completedAtMs))
-      }));
+      attempts = [];
       saveMockAttempts(attempts);
     }
   } catch (e) {
-    attempts = SEED_ATTEMPTS.map(a => ({
-      ...a,
-      completedAt: createTimestamp(new Date(a.completedAtMs))
-    }));
+    attempts = [];
   }
 
   return { users, attempts };
